@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CopyPalette</title>
+    <script defer src="script.js"></script>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            font-size: 35px;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #40213d64;
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-icons button {
+            background: none;
+            border: none;
+            color: rgb(255, 255, 255);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .container {
+            padding: 100px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+        }
+
+        button {
+            background-color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+            font-size: 1.2rem;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        button:hover {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .palette {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .colors {
+            display: flex;
+            border: 1px dashed #ccc;
+            padding: 25px;
+            border-radius: 3px;
+            padding-bottom: 20px;
+        }
+
+        .color-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .color-box {
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+        }
+
+        .color-code {
+            font-size: 15px;
+            margin-top: -3; 
+            text-align: center;
+        }
+
+        .controls {
+            font-size: 25px;
+            margin-top: 35px;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #222;
+            cursor: pointer; 
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>Palette Copier</h1>
+        <div class="nav-icons">
+            <button id="darkModeToggle">🌙</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <p>Create your SVG palette and use it in Figma/Sketch by just using copy and paste</p>
+        
+        <div class="palette">
+            <div class="colors">
+                <!-- Colors will be dynamically generated here -->
+            </div>
+        </div>
+        
+        <div class="controls">
+            <label>Base Color:</label>
+            <input type="color" id="baseColorPicker" value="#40213D">
+            <label>Contrast:</label>
+            <input type="range" id="contrast" min="0" max="100" value="50">
+            
+            <label>Variations:</label>
+            <button id="decreaseVar">-</button>
+            <span id="variationCount">5</span>
+            <button id="increaseVar">+</button>
+            <button class="copy-btn">COPY</button>
+            <button id="randomColor">Random Color</button>
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
+        </div>
+    </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const baseColorPicker = document.getElementById("baseColorPicker");
+    const decreaseVar = document.getElementById("decreaseVar");
+    const increaseVar = document.getElementById("increaseVar");
+    const variationCount = document.getElementById("variationCount");
+    const colorsContainer = document.querySelector(".colors");
+    const copyBtn = document.querySelector(".copy-btn");
+    const darkModeToggle = document.getElementById("darkModeToggle");
+    const randomColorBtn = document.getElementById("randomColor");
+    const contrastInput = document.getElementById("contrast");
+    const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
+
+    let variations = 5;
+    let darkMode = true;
+    let currentBaseColor = baseColorPicker.value;
+    let currentContrast = parseInt(contrastInput.value);
+
+    let historyStack = [{ baseColor: currentBaseColor }]; // Initialize history with initial state
+    let redoStack = [];
+
+    function generatePalette(baseColor, variationCount, contrast) {
+        colorsContainer.innerHTML = "";
+        let baseRGB = hexToRgb(baseColor);
+        let contrastFactor = contrast / 100;
+
+        for (let i = variationCount - 1; i >= 0; i--) {
+            let modifiedRGB = {
+                r: Math.max(0, Math.min(255, baseRGB.r + (i * 20 * contrastFactor))),
+                g: Math.max(0, Math.min(255, baseRGB.g + (i * 20 * contrastFactor))),
+                b: Math.max(0, Math.min(255, baseRGB.b + (i * 20 * contrastFactor))),
+            };
+
+            let colorHex = rgbToHex(modifiedRGB.r, modifiedRGB.g, modifiedRGB.b);
+
+            let colorContainer = document.createElement("div");
+            colorContainer.classList.add("color-container");
+
+            let colorBox = document.createElement("div");
+            colorBox.classList.add("color-box");
+            colorBox.style.backgroundColor = colorHex;
+            colorBox.title = colorHex;
+
+            let colorCodeText = document.createElement("div");
+            colorCodeText.classList.add("color-code");
+            colorCodeText.innerText = colorHex;
+
+            colorBox.addEventListener("click", () => {
+                navigator.clipboard.writeText(colorHex).then(() => {
+                    alert(`Copied: ${colorHex}`);
+                });
+            });
+
+            colorContainer.appendChild(colorBox);
+            colorContainer.appendChild(colorCodeText);
+            colorsContainer.appendChild(colorContainer);
+        }
+        //saveHistory();  // Removed from here
+    }
+
+    function saveHistory() {
+        historyStack.push({ baseColor: currentBaseColor });
+        redoStack = [];
+    }
+
+    function undo() {
+        if (historyStack.length > 1) {
+            redoStack.push(historyStack.pop());
+            const lastState = historyStack[historyStack.length - 1];
+            currentBaseColor = lastState.baseColor;
+            baseColorPicker.value = currentBaseColor;
+            generatePalette(currentBaseColor, variations, currentContrast);
+        }
+    }
+
+    function redo() {
+        if (redoStack.length > 0) {
+            const previousState = redoStack.pop();
+            historyStack.push(previousState);
+            currentBaseColor = previousState.baseColor;
+            baseColorPicker.value = currentBaseColor;
+            generatePalette(currentBaseColor, variations, currentContrast);
+        }
+    }
+
+    baseColorPicker.addEventListener("input", () => {
+        //currentBaseColor = baseColorPicker.value; // removed from here
+        //generatePalette(currentBaseColor, variations, currentContrast); // removed from here
+        const newColor = baseColorPicker.value;
+        if (newColor !== currentBaseColor) { // Only save to history if the color is different
+            currentBaseColor = newColor;
+            saveHistory();  // <---- Added here, before generatePalette
+            generatePalette(currentBaseColor, variations, currentContrast);
+        }
+    });
+
+    contrastInput.addEventListener("input", () => {
+        currentContrast = parseInt(contrastInput.value);
+        generatePalette(currentBaseColor, variations, currentContrast);
+    });
+
+    decreaseVar.addEventListener("click", () => {
+        if (variations > 2) {
+            variations--;
+            variationCount.textContent = variations;
+            generatePalette(currentBaseColor, variations, currentContrast);
+        }
+    });
+
+    increaseVar.addEventListener("click", () => {
+        if (variations < 10) {
+            variations++;
+            variationCount.textContent = variations;
+            generatePalette(currentBaseColor, variations, currentContrast);
+        }
+    });
+
+    copyBtn.addEventListener("click", () => {
+        let colorCodes = Array.from(document.querySelectorAll(".color-code"))
+            .map(code => code.innerText)
+            .join(", ");
+        navigator.clipboard.writeText(colorCodes).then(() => {
+            alert("Color palette copied!");
+        });
+    });
+
+    darkModeToggle.addEventListener("click", () => {
+        darkMode = !darkMode;
+        document.body.style.backgroundColor = darkMode ? "#1e1e1e" : "#ffffff";
+        document.body.style.color = darkMode ? "#fff" : "#000";
+    });
+
+    randomColorBtn.addEventListener("click", () => {
+        const randomColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+        currentBaseColor = randomColor;
+        baseColorPicker.value = currentBaseColor;
+        saveHistory(); // Added here for random color
+        generatePalette(currentBaseColor, variations, currentContrast);
+    });
+
+    undoBtn.addEventListener("click", undo);
+    redoBtn.addEventListener("click", redo);
+
+    generatePalette(currentBaseColor, variations, currentContrast);
+});
+
+function hexToRgb(hex) {
+    let bigint = parseInt(hex.slice(1), 16);
+    return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255,
+    };
+}
+
+function rgbToHex(r, g, b) {
+    return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1).toUpperCase()}`;
+}
+
+  </script>
+   </body>
+</html>

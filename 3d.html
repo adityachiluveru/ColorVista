@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combined 3D & Color Extractor</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            color: #ffffff;
+            text-align: center;      
+        }
+
+        /* Main Header (Navbar) */
+        header {
+            position: relative;
+            z-index: 2; /* Ensure navbar comes above the 3D model */
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0);
+            font-size: 30px;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        /* Upload Section */
+        .upload-box {
+            border: 1px dashed #ffffff;
+            padding: 40px;
+            width: 80%;
+            max-width: 600px;
+            margin: 30px auto;
+            cursor: pointer;
+            background-color: rgba(255, 0, 0, 0);
+            border-radius: 12px;
+            transition: all 0.3s;
+            z-index: 3; /* Ensure the upload box stays in front */
+        }
+
+        .upload-box:hover {
+            background-color: #ffffff25;
+        }
+
+        .upload-box input {
+            display: none;
+        }
+
+        .upload-box p {
+            font-size: 25px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        /* Model Viewer Section */
+        #model-viewer-section {
+            position: fixed; /* Fix the 3D model to the background */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place the 3D model behind all other content */
+        }
+
+        model-viewer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensure it fills the entire background */
+        }
+
+        /* Image Preview Container */
+        #imagePreviewContainer {
+            position: relative;
+            display: none;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        /* Image Preview */
+        #imagePreview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: none;
+            border-radius: 10%;
+        }
+
+        /* Color Picker and Extracted Colors Section */
+        #colors-section {
+            margin-top: 30px;
+            padding: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            color: #fffefe;
+            z-index: 3; /* Ensure the colors section stays above the 3D model */
+        }
+
+        .color-box {
+            background: #2c2c2c;
+            border-radius: 10px;
+            padding: 20px;
+            width: 220px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.3s;
+        }
+
+        .color-box:hover {
+            transform: scale(1.05);
+        }
+
+        .color-preview-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+
+        .color-box p {
+            font-size: 16px;
+            font-weight: 500;
+            color: #fff;
+            margin: 0;
+        }
+
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #ff6e6100;
+            color: white;
+            border: none;
+            padding: 15px 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 22px;
+            display: none;
+        }
+
+        .back-to-top:hover {
+            background-color: #000000;
+        }
+
+        /* Color Picker Box */
+        #colorPickerBox {
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .copy-btn-color {
+    background-color: #000000; /* Blue background */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 50px; /* Rounded button */
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.05s ease-in-out; /* Smooth transition */
+    box-shadow: 0 4px 8px rgba(255, 255, 255, 0); /* Soft shadow for depth */
+}
+
+.copy-btn-color:hover {
+    background-color: #00000000; /* Darker blue on hover */
+    transform: scale(1.05); /* Slight scaling effect on hover */
+    color: rgb(255, 255, 255);
+}
+
+.copy-btn-color:active {
+    background-color: #6f6f6f; /* Even darker on click */
+    transform: scale(0.98); /* Shrink effect on click */
+}
+
+.copy-btn-color:focus {
+    outline: none; /* Remove outline */
+    box-shadow: 0 0 0 4px rgba(61, 61, 61, 0.5); /* Blue glow effect when focused */
+}
+
+.copy-btn-color {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>My Color Tool</h1>
+    </header>
+
+    <main>
+        <section id="model-viewer-section">
+            <model-viewer 
+            id="three" 
+            src="./24_dizzying_space_travel_-_inktober2019.glb" 
+            autoplay 
+            auto-rotate 
+            rotation-per-second="1"
+            camera-orbit="0deg 90deg 2000m" 
+            min-camera-orbit="0deg 90deg 1m" 
+            max-camera-orbit="0deg 90deg 2000m" 
+            field-of-view="60deg" >
+        </model-viewer>
+        
+        </section>
+
+        <section id="color-extractor-section">
+            <div class="container">
+                <h2>Image Color Extractor</h2>
+                <div class="upload-box" id="dropZone">
+                    <p>Click or Drag & Drop an image here</p>
+                    <input type="file" id="imageInput" accept="image/*">
+                </div>
+                <div id="imagePreviewContainer" class="image-container">
+                    <img id="imagePreview" alt="Uploaded Image">
+                </div>
+                <div id="colorPickerBox">
+                    <input type="color" id="colorPicker" value="#ffffff"
+                    style="height: 40px;
+                    border: 1px solid #444;
+                    border-radius: 5px;
+                    background-color: #222;">
+                    <span id="hexColor">#ffffff</span>
+                    <button class="copy-btn-color" onclick="copyToClipboard('${hex}', event)">Copy</button>
+                </div>
+                <div id="colors-section">
+                    <h3>Extracted Colors:</h3>
+                    <div id="color-palette"></div>
+                </div>
+                <button id="backToTop" class="back-to-top">↑</button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const dropZone = document.getElementById("dropZone");
+        const imageInput = document.getElementById("imageInput");
+        const imagePreview = document.getElementById("imagePreview");
+        const colorsSection = document.getElementById("colors-section");
+        const colorPreview = document.getElementById("colorPreview");
+        const hexColor = document.getElementById("hexColor");
+        const colorPicker = document.getElementById("colorPicker");
+        const copyColorBtn = document.getElementById("copyColorBtn");
+
+        // Click Function for Upload Box
+        dropZone.addEventListener("click", function () {
+            imageInput.click();
+        });
+
+        // Drag & Drop Events
+        dropZone.addEventListener("dragover", function (e) {
+            e.preventDefault();
+            dropZone.style.borderColor = "#007bff";
+        });
+
+        dropZone.addEventListener("dragleave", function () {
+            dropZone.style.borderColor = "#ff6f61";
+        });
+
+        dropZone.addEventListener("drop", function (e) {
+            e.preventDefault();
+            dropZone.style.borderColor = "#ff6f61";
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        imageInput.addEventListener("change", function (e) {
+            handleFile(e.target.files[0]);
+        });
+
+        // Handle File Selection
+        function handleFile(file) {
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    imagePreview.src = event.target.result;
+                    imagePreview.style.display = "block"; // Make the image visible
+                    document.getElementById("imagePreviewContainer").style.display = "block"; // Ensure the container is shown
+                    colorsSection.style.visibility = "hidden"; // Hide the colors section
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Extract Colors Function
+        function extractColors() {
+            const image = document.getElementById("imagePreview");
+            const colorThief = new ColorThief();
+
+            if (!image.complete) {
+                alert("Image is still loading. Please try again.");
+                return;
+            }
+
+            const palette = colorThief.getPalette(image, 10);
+            displayColors(palette);
+        }
+
+        // Display Extracted Colors
+        function displayColors(colors) {
+            const colorPalette = document.getElementById("color-palette");
+            colorPalette.innerHTML = ""; // Clear previous colors
+        
+            colors.forEach(color => {
+                const [r, g, b] = color;
+                const hex = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+        
+                // Create color box
+                const colorBox = document.createElement("div");
+                colorBox.classList.add("color-box");
+        
+                // Set the inner HTML with the color preview, hex code, and copy button
+                colorBox.innerHTML = `
+                    <div class="color-preview-box" style="background-color: ${hex};"></div>
+                    <p>${hex}</p>
+                    <button class="copy-btn-color" onclick="copyToClipboard('${hex}', event)">Copy</button>
+                `;
+        
+                colorPalette.appendChild(colorBox);
+            });
+        
+            colorsSection.style.visibility = "visible"; // Show the colors section
+        }
+
+        // Copy to Clipboard Function
+        function copyToClipboard(text, event) {
+        navigator.clipboard.writeText(text);
+
+        // Get the button that was clicked
+         const copyButton = event.target;
+
+        // Change the button text to "Copied!"
+        copyButton.textContent = "Copied!";
+
+        // After 2 seconds, revert the button text back to "Copy"
+        setTimeout(() => {
+           copyButton.textContent = "Copy";
+        }, 2000);
+        }
+
+
+        // Update color preview and hex value on hover
+        imagePreview.addEventListener("mousemove", function (e) {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            // Set the canvas size to match the image
+            canvas.width = imagePreview.naturalWidth;
+            canvas.height = imagePreview.naturalHeight;
+
+            // Draw the image on the canvas
+            ctx.drawImage(imagePreview, 0, 0, canvas.width, canvas.height);
+
+            // Get the pixel color at the mouse position
+            const x = e.offsetX;
+            const y = e.offsetY;
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+
+            // Convert RGB to Hex
+            const hex = `#${pixel[0].toString(16).padStart(2, "0")}${pixel[1].toString(16).padStart(2, "0")}${pixel[2].toString(16).padStart(2, "0")}`;
+
+            // Update the color preview and hex code
+            hexColor.textContent = hex;
+            colorPicker.value = hex; // Sync color picker with hovered color
+            colorPreview.style.backgroundColor = hex;
+            copyColorBtn.style.display = "inline-block"; // Show the copy button
+        });
+
+        // Trigger color extraction after image preview loads
+        imagePreview.addEventListener("load", extractColors);
+
+        // Show the back to top button
+        window.onscroll = function() {
+            if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
+                document.getElementById("backToTop").style.display = "block";
+            } else {
+                document.getElementById("backToTop").style.display = "none";
+            }
+        };
+        
+        document.getElementById("backToTop").addEventListener("click", function() {
+            window.scrollTo({top: 0, behavior: "smooth"});
+        });
+    </script>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Harmonies Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Base Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            align-items: center;
+            text-align: center;
+            transition: background-color 0.3s, color 0.3s;
+            background-image: url('./gradient.png'); /* Add this line */
+            background-size: cover; /* Adjust as needed */
+            background-position: center; /* Adjust as needed */
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        section {
+            margin: 20px 0;
+        }
+
+        .section-header {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #9cb8d5;
+            font-weight: 600;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .button-container button {
+            margin: 10px;
+            padding: 12px 25px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-container button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        input[type="color"] {
+            height: 50px;
+            width: 100px;
+            border: 2px solid #007BFF;
+            border-radius: 8px;
+            margin: 20px auto;
+            display: block;
+        }
+
+        #color-scheme {
+            display: flex;
+            justify-content: center;
+            margin-top: 30px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        #color-scheme div {
+            display: inline-block;
+            width: 120px;
+            height: 120px;
+            border-radius: 12px;
+            position: relative;
+            margin: 10px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        #color-scheme div:hover {
+            transform: scale(1.05);
+        }
+
+        .color-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            text-align: center;
+            padding: 8px 0;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
+        #color-scheme div:hover .color-info {
+            opacity: 1;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease, background-color 0.3s;
+        }
+
+        #color-scheme div:hover .copy-button {
+            opacity: 1;
+        }
+
+        .copy-button:hover {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .download-button {
+            margin-top: 30px;
+            background-color: #007BFF;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .download-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        /* Dark/Light Mode Styles */
+        .dark-mode {
+            background-color: #1a1a1a;
+            color: #f8f9fa;
+        }
+
+        .light-mode {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .toggle-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .button-container {
+                flex-direction: column;
+            }
+
+            .button-container button {
+                width: 100%;
+                margin: 10px 0;
+            }
+
+            #color-scheme div {
+                width: 90%;
+                height: auto;
+                aspect-ratio: 1;
+            }
+             input[type="color"]{
+                width: 90%;
+            }
+        }
+        @media (max-width: 480px){
+            .section-header{
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body class="light-mode">
+    
+
+    <header>
+        <h1>Color Harmonies Generator</h1>
+        <p>Choose a base color and generate complementary or harmonized colors!</p>
+    </header>
+
+    <section id="harmonies">
+        <h2 class="section-header">Color Harmonies</h2>
+        <label for="base-color">Choose a Base Color:</label>
+        <input type="color" id="base-color">
+        <div class="button-container">
+            <button onclick="generateComplementary()">Complementary</button>
+            <button onclick="generateTriadic()">Triadic</button>
+            <button onclick="generateAnalogous()">Analogous</button>
+            <button onclick="generateSplitComplementary()">Split-Complementary</button>
+        </div>
+        <div id="color-scheme"></div>
+        <button class="download-button" onclick="downloadImage()">Download Image</button>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/chroma-js@2.1.0/chroma.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script>
+        // Toggle between Light and Dark mode
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('dark-mode');
+            body.classList.toggle('light-mode');
+        }
+
+        // Color Harmonies Functions
+        function generateComplementary() {
+            const baseColor = document.getElementById('base-color').value;
+            const complementaryColor = getComplementaryColor(baseColor);
+            displayColorScheme([baseColor, complementaryColor]);
+        }
+
+        function generateTriadic() {
+            const baseColor = document.getElementById('base-color').value;
+            const triadicColors = getTriadicColors(baseColor);
+            displayColorScheme(triadicColors);
+        }
+
+        function generateAnalogous() {
+            const baseColor = document.getElementById('base-color').value;
+            const analogousColors = getAnalogousColors(baseColor);
+            displayColorScheme(analogousColors);
+        }
+
+        function generateSplitComplementary() {
+            const baseColor = document.getElementById('base-color').value;
+            const splitComplementaryColors = getSplitComplementaryColors(baseColor);
+            displayColorScheme(splitComplementaryColors);
+        }
+
+        // Helper function to calculate complementary color
+        function getComplementaryColor(hex) {
+            let color = chroma(hex).set('hsl.h', '+180');
+            return color.hex();
+        }
+
+        // Helper function to get triadic colors
+        function getTriadicColors(hex) {
+            let color = chroma(hex);
+            let colors1 = color.set('hsl.h', '+120').hex();
+            let colors2 = color.set('hsl.h', '-120').hex();
+            return [color.hex(), colors1, colors2];
+        }
+
+        // Helper function to get analogous colors
+        function getAnalogousColors(hex) {
+            let color = chroma(hex);
+            let colors1 = color.set('hsl.h', '+30').hex();
+            let colors2 = color.set('hsl.h', '-30').hex();
+            return [color.hex(), colors1, colors2];
+        }
+
+        // Helper function to get split-complementary colors
+        function getSplitComplementaryColors(hex) {
+            let color = chroma(hex);
+            let complementary = color.set('hsl.h', '+180');
+            let colors1 = complementary.set('hsl.h', '+30').hex();
+            let colors2 = complementary.set('hsl.h', '-30').hex();
+            return [color.hex(), colors1, colors2];
+        }
+
+        // Function to display the color scheme
+        function displayColorScheme(colors) {
+            let container = document.getElementById('color-scheme');
+            container.innerHTML = '';
+            colors.forEach(color => {
+                let div = document.createElement('div');
+                div.style.backgroundColor = color;
+
+                // Display color code and copy button
+                let colorCode = document.createElement('div');
+                colorCode.className = 'color-info';
+                colorCode.textContent = color;
+
+                let copyButton = document.createElement('button');
+                copyButton.className = 'copy-button';
+                copyButton.textContent = 'Copy';
+                copyButton.onclick = () => copyToClipboard(color);
+
+                div.appendChild(colorCode);
+                div.appendChild(copyButton);
+                container.appendChild(div);
+            });
+        }
+
+        // Function to copy color code to clipboard
+        function copyToClipboard(color) {
+            navigator.clipboard.writeText(color).then(() => {
+                alert(`Color code ${color} copied to clipboard!`);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert(`Failed to copy color code ${color}. Please copy manually.`);
+            });
+        }
+
+        // Download Image (Color Scheme)
+        function downloadImage() {
+            html2canvas(document.getElementById("color-scheme")).then(function(canvas) {
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL();
+                link.download = "color-scheme.png";
+                link.click();
+                 alert("Image downloaded successfully!");
+            }).catch(err=>{
+                console.error("Download failed", err);
+                alert("Failed to download image. Please try again.");
+            });
+        }
+    </script>
+</body>
+</html>

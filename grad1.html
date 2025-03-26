@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradient Generator with Moving Gradient</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            transition: background 0.3s ease-in-out;
+        }
+
+        .container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .controls > * {
+            font-size: 1rem;
+            color: white;
+        }
+
+        input[type="color"], button, select, input[type="range"], input[type="number"] {
+            height: 30px;
+            border-radius: 5px;
+            padding: 5px;
+            background: #000000; /* Changed base button color */
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        input[type="range"] {
+            height: 6px;
+        }
+
+        .color-pickers {
+            display: flex;
+            gap: 15px;
+        }
+
+        .color-picker {
+            display: flex;
+            align-items: center;
+        }
+
+        .color-picker-input-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button {
+            padding: 8px 12px;
+            background: #000000; /* Changed button color */
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        @keyframes movingGradient {
+            0% {
+                background-position: 0% 0%;
+            }
+            50% {
+                background-position: 100% 100%;
+            }
+            100% {
+                background-position: 0% 0%;
+            }
+        }
+
+        .moving-gradient {
+            animation: movingGradient 10s linear infinite;
+        }
+
+        .gradient-preview {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #1178a4, #c9e2e2);
+            transition: background 0.3s ease-in-out;
+        }
+
+        .color-stop-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .color-stop-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lock-button {
+            width: 24px;
+            height: 24px;
+            background-color: #000000; /* Changed lock button color */
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lock-button.locked {
+            background-color: #ffa600;
+        }
+
+        .lock-icon {
+            width: 16px;
+            height: 16px;
+            color: white;
+        }
+
+        input[type="number"] {
+            width: 50px;
+            text-align: center;
+            padding: 5px;
+            border-radius: 5px;
+            border: none;
+            background-color: #000000; /* Changed number input color */
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="gradient-preview" id="gradientPreview"></div>
+
+    <div class="container">
+        <div class="controls">
+            <div class="color-pickers" id="colorPickers">
+            </div>
+            
+            <div class="color-stop-controls">
+                <button id="addColorBtn">+</button>
+            </div>
+
+            <button id="randomColorBtn">Random Colors</button>
+            <button id="toggleAnimationBtn" style="display: none;">Toggle Animation</button>
+            <button id="downloadBtn">Download PNG</button>
+            <button id="undoBtn">Undo</button> <button id="redoBtn">Redo</button> <div>
+                <label for="gradientType">Type</label>
+                <select id="gradientType">
+                    <option value="linear">Linear</option>
+                    <option value="radial">Radial</option>
+                    <option value="conic">Conic</option>
+                </select>
+
+                <label for="angle">Angle</label>
+                <input type="number" id="angle"  value="160" style="height: auto;">
+                <span id="angleValue">°</span>
+            </div>
+
+            <textarea style="color: #252525;" id="gradientCSS"></textarea>
+        </div>
+    </div>
+    <script>
+        const colorPickersContainer = document.getElementById('colorPickers');
+        const gradientPreview = document.getElementById('gradientPreview');
+        const gradientTypeSelect = document.getElementById('gradientType');
+        const angleInput = document.getElementById('angle');
+        const angleValue = document.getElementById('angleValue');
+        const randomColorBtn = document.getElementById('randomColorBtn');
+        const toggleAnimationBtn = document.getElementById('toggleAnimationBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const gradientCSS = document.getElementById('gradientCSS');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
+        const addColorBtn = document.getElementById('addColorBtn');
+
+        let history = [];
+        let historyIndex = -1;
+        let colorPickers = [];
+
+        function updateGradient(saveHistory = true) {
+            const colors = colorPickers.map(input => input.value);
+            const angle = angleInput.value;
+            const gradientType = gradientTypeSelect.value;
+            
+            let gradientStyle = '';
+            if (gradientType === 'linear') {
+                gradientStyle = `linear-gradient(${angle}deg, ${colors.join(', ')})`;
+            } else if (gradientType === 'radial') {
+                gradientStyle = `radial-gradient(circle, ${colors.join(', ')})`;
+            } else if (gradientType === 'conic') {
+                gradientStyle = `conic-gradient(from ${angle}deg, ${colors.join(', ')})`;
+            }
+
+            gradientPreview.style.background = gradientStyle;
+            gradientCSS.value = `background: ${gradientStyle};`;
+
+            if (saveHistory) {
+                const currentState = {
+                    colors: colors.slice(),
+                    angle: angle,
+                    gradientType: gradientType,
+                };
+                
+                if (historyIndex === -1 || JSON.stringify(currentState) !== JSON.stringify(history[historyIndex])) {
+                    if (historyIndex < history.length - 1) {
+                        history = history.slice(0, historyIndex + 1);
+                    }
+                    history.push(currentState);
+                    historyIndex++;
+                }
+
+                undoBtn.disabled = historyIndex <= 0;
+                redoBtn.disabled = historyIndex >= history.length - 1;
+            }
+            
+            undoBtn.disabled = historyIndex <= 0;
+            redoBtn.disabled = historyIndex >= history.length - 1;
+        }
+
+        function addColorPicker(colorValue = '#808080') {
+            const colorPickerDiv = document.createElement('div');
+            colorPickerDiv.className = 'color-picker';
+            let removeButtonHTML = `<button class="remove-color-btn">-</button>`;
+            if(colorPickers.length < 2) {
+                removeButtonHTML = '';
+            }
+            colorPickerDiv.innerHTML = `
+                <label>Color ${colorPickers.length + 1}</label>
+                <div class="color-picker-input-container">
+                    <input type="color" class="color" value="${colorValue}">
+                    ${removeButtonHTML}
+                    <button class="lock-button">
+                        <svg class="lock-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </button>
+                </div>
+            `;
+            colorPickersContainer.appendChild(colorPickerDiv);
+
+            const colorInput = colorPickerDiv.querySelector('.color');
+            const removeButton = colorPickerDiv.querySelector('.remove-color-btn');
+            const lockButton = colorPickerDiv.querySelector('.lock-button');
+
+            colorPickers.push(colorInput);
+            colorInput.locked = false;
+
+            colorInput.addEventListener('input', () => updateGradient());
+            if(removeButton){
+              removeButton.addEventListener('click', () => {
+                  removeColorPicker(colorPickerDiv, colorInput);
+              });
+            }
+            lockButton.addEventListener('click', () => {
+                colorInput.locked = !colorInput.locked;
+                lockButton.classList.toggle('locked', colorInput.locked);
+            });
+
+            if (colorPickers.length <= 2) {
+                document.querySelectorAll('.remove-color-btn').forEach(button => {
+                    button.disabled = true;
+                });
+            } else {
+                document.querySelectorAll('.remove-color-btn').forEach(button => {
+                    button.disabled = false;
+                });
+            }
+
+            updateGradient(false);
+            return colorInput;
+        }
+
+        function removeColorPicker(colorPickerDiv, colorInput) {
+            const index = colorPickers.indexOf(colorInput);
+            if (index > -1) {
+                colorPickers.splice(index, 1);
+            }
+            colorPickerDiv.remove();
+            
+            const colorPickerDivs = colorPickersContainer.querySelectorAll('.color-picker');
+            colorPickerDivs.forEach((div, index) => {
+                const label = div.querySelector('label');
+                label.textContent = `Color ${index + 1}`;
+            });
+
+            if (colorPickers.length <= 2) {
+                document.querySelectorAll('.remove-color-btn').forEach(button => {
+                    button.disabled = true;
+                });
+            } else {
+                document.querySelectorAll('.remove-color-btn').forEach(button => {
+                    button.disabled = false;
+                });
+            }
+            
+            updateGradient(false);
+        }
+
+        colorPickers.forEach(input => {
+            input.addEventListener('input', () => updateGradient());
+        });
+
+        angleInput.addEventListener('input', () => {
+            angleValue.textContent = `°`;
+            updateGradient();
+        });
+
+        gradientTypeSelect.addEventListener('change', () => updateGradient());
+
+        toggleAnimationBtn.addEventListener('click', () => {
+            gradientPreview.classList.toggle('moving-gradient');
+        });
+
+        randomColorBtn.addEventListener('click', () => {
+            colorPickers.forEach(input => {
+                if (!input.locked) {
+                    input.value = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+                }
+            });
+            updateGradient();
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = gradientPreview.offsetWidth;
+            canvas.height = gradientPreview.offsetHeight;
+
+            const colors = colorPickers.map(input => input.value);
+            const angle = angleInput.value;
+            const gradientType = gradientTypeSelect.value;
+            let gradient;
+
+            if (gradientType === 'linear') {
+                gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                colors.forEach((color, index) => {
+                    gradient.addColorStop(index / (colors.length - 1), color);
+                });
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else if (gradientType === 'radial') {
+                gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 2);
+                colors.forEach((color, index) => {
+                    gradient.addColorStop(index / (colors.length - 1), color);
+                });
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else if (gradientType === 'conic') {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = Math.min(centerX, centerY);
+
+                gradient = ctx.createConicGradient(angle * Math.PI / 180, centerX, centerY);
+                colors.forEach((color, index) => {
+                    gradient.addColorStop(index / (colors.length - 1), color);
+                });
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'gradient.png';
+            link.click();
+        });
+
+        undoBtn.addEventListener('click', () => {
+            if (historyIndex > 0) {
+                historyIndex--;
+                const previousState = history[historyIndex];
+                
+                while (colorPickers.length > previousState.colors.length) {
+                    removeColorPicker(colorPickersContainer.lastChild, colorPickers[colorPickers.length-1]);
+                }
+                while (colorPickers.length < previousState.colors.length){
+                    addColorPicker();
+                }
+
+                previousState.colors.forEach((color, index) => {
+                    colorPickers[index].value = color;
+                });
+                angleInput.value = previousState.angle;
+                angleValue.textContent = `°`;
+                gradientTypeSelect.value = previousState.gradientType;
+                updateGradient(false);
+            }
+            
+            undoBtn.disabled = historyIndex <= 0;
+            redoBtn.disabled = historyIndex >= history.length - 1;
+        });
+
+        redoBtn.addEventListener('click', () => {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                const nextState = history[historyIndex];
+
+                while (colorPickers.length > nextState.colors.length) {
+                    removeColorPicker(colorPickersContainer.lastChild, colorPickers[colorPickers.length-1]);
+                }
+                while (colorPickers.length < nextState.colors.length){
+                    addColorPicker();
+                }
+                
+                nextState.colors.forEach((color, index) => {
+                    colorPickers[index].value = color;
+                });
+                angleInput.value = nextState.angle;
+                angleValue.textContent = `°`;
+                gradientTypeSelect.value = nextState.gradientType;
+                updateGradient(false);
+            }
+            
+            undoBtn.disabled = historyIndex <= 0;
+            redoBtn.disabled = historyIndex >= history.length - 1;
+        });
+
+        addColorBtn.addEventListener('click', () => {
+            addColorPicker();
+        });
+
+        if (colorPickers.length === 0) {
+            const color1Input = addColorPicker('#133E67');
+            const color2Input = addColorPicker('#84A35A');
+        }
+        
+        updateGradient();
+        undoBtn.disabled = true;
+        redoBtn.disabled = true;
+    </script>
+</body>
+</html>

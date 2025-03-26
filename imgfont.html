@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Text Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.2/color-thief.min.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background-color: #f0f0f0; 
+            margin: 0; 
+            padding: 0;
+            background-image: url('./gradient.png'); /* Replace with your image URL */
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        main {
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.223); /* Semi-transparent white for content area */
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h2 { 
+            color: #333; 
+        }
+        #image-container { 
+            position: relative; 
+            margin: 20px auto; 
+            display: inline-block; 
+            background-color: white; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            user-select: none; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        img { 
+            width: 100%; /* Responsive image width */
+            height: auto; 
+            display: block; 
+            pointer-events: none; 
+        }
+        #text-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
+            font-size: 3vw; /* Responsive font size */
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            cursor: move;
+            word-wrap: break-word;
+            transform-origin: center center;
+            user-select: none;
+            padding: 10px;
+        }
+        #rotate-handle {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+            font-size: 1.5em; /* Larger rotate handle */
+        }
+        #text-below {
+            margin-top: 10px;
+            font-size: 1.2em; /* Responsive font size */
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"]{
+            padding: 10px;
+            font-size: 1em; /* Responsive font size */
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: calc(100% - 22px);/* Adjusted width */
+            box-sizing: border-box;
+        }
+        input[type="color"]{
+            width: 40px;
+            height: 40px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #222;
+            cursor: pointer;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 1em; /* Responsive font size */
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <main>
+        <h2>Upload an Image</h2>
+        <input type="file" id="upload" accept="image/*">
+        <div>
+            <input type="text" id="user-text" placeholder="Enter your text" oninput="updateText()">
+        </div>
+        <div>
+            <label for="color-picker">Pick a color:</label>
+            <input type="color" id="color-picker" onchange="setCustomColor()">
+        </div>
+        <div id="image-container">
+            <img id="uploaded-image" class="hidden">
+            <div id="text-overlay">
+                Your Text Here
+                <div id="rotate-handle">🔄</div>
+            </div>
+        </div>
+        <div id="text-below"></div>
+        <div>
+            <button onclick="generateRandomText()">Generate Random Text</button>
+            <button onclick="changeFont()">Change Font</button>
+            <button onclick="changeColor()">Change Random Color</button>
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
+        </div>
+    </main>
+    <script>
+        const fonts = ["Arial", "Georgia", "Courier New", "Verdana", "Times New Roman", "Impact", "Comic Sans MS"];
+        const textOverlay = document.getElementById("text-overlay");
+        const uploadedImage = document.getElementById("uploaded-image");
+        const userTextInput = document.getElementById("user-text");
+        const colorPicker = document.getElementById("color-picker");
+        const undoBtn = document.getElementById("undoBtn");
+        const redoBtn = document.getElementById("redoBtn");
+        let history = [];
+        let future = [];
+        let imageColors = []; // Array to hold colors from the image
+        let rotation = 0; // Initial rotation angle
+
+        document.getElementById("upload").addEventListener("change", function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImage.src = e.target.result;
+                    uploadedImage.classList.remove("hidden");
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        uploadedImage.onload = function() {
+            if (uploadedImage.complete && uploadedImage.naturalWidth > 0) {
+                const colorThief = new ColorThief();
+                imageColors = colorThief.getPalette(uploadedImage, 5); // Get 5 dominant colors
+                generateRandomText();
+            }
+        };
+
+        function generateRandomText() {
+            const words = ["Elegance", "Serene", "Mystic", "Harmony", "Vibrance", "Breeze", "Whisper", "Bold", "Nature", "Tranquil"];
+            const randomWord = words[Math.floor(Math.random() * words.length)];
+            userTextInput.value = randomWord;
+            updateText();
+            changeFont();
+            changeColor();
+            saveState();
+        }
+
+        function updateText() {
+            const text = userTextInput.value;
+            textOverlay.innerText = text;
+            saveState();
+        }
+
+        function changeFont() {
+            const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
+            textOverlay.style.fontFamily = randomFont;
+            saveState();
+        }
+
+        function changeColor() {
+            if (imageColors.length > 0) {
+                const randomColor = imageColors[Math.floor(Math.random() * imageColors.length)];
+                textOverlay.style.color = `rgb(${randomColor[0]}, ${randomColor[1]}, ${randomColor[2]})`;
+                saveState();
+            }
+        }
+
+        function setCustomColor() {
+            const selectedColor = colorPicker.value;
+            textOverlay.style.color = selectedColor;
+            saveState();
+        }
+
+        function saveState() {
+            const state = {
+                text: userTextInput.value,
+                font: textOverlay.style.fontFamily,
+                color: textOverlay.style.color,
+                rotation: rotation
+            };
+            history.push(state);
+            future = []; // Clear the future stack
+        }
+
+        undoBtn.addEventListener('click', () => {
+            if (history.length > 1) {
+                future.push(history.pop()); // Move the last state to future
+                restoreState(history[history.length - 1]);
+            }
+        });
+
+        redoBtn.addEventListener('click', () => {
+            if (future.length > 0) {
+                const state = future.pop(); // Get the last undone state
+                history.push(state); // Move it back to history
+                restoreState(state);
+            }
+        });
+
+        function restoreState(state) {
+            userTextInput.value = state.text;
+            textOverlay.style.fontFamily = state.font;
+            textOverlay.style.color = state.color;
+            rotation = state.rotation;
+            textOverlay.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+            textOverlay.innerText = state.text; // Update the overlay text
+        }
+
+        // Draggable functionality
+        function startDrag(event) {
+            let isDragging = true;
+            event.preventDefault();
+
+            const offsetX = event.clientX - textOverlay.getBoundingClientRect().left;
+            const offsetY = event.clientY - textOverlay.getBoundingClientRect().top;
+
+            function dragMove(e) {
+                if (isDragging) {
+                    const containerRect = document.getElementById("image-container").getBoundingClientRect();
+                    let newX = e.clientX - containerRect.left - offsetX;
+                    let newY = e.clientY - containerRect.top - offsetY;
+
+                    newX = Math.max(0, Math.min(newX, containerRect.width - textOverlay.offsetWidth));
+                    newY = Math.max(0, Math.min(newY, containerRect.height - textOverlay.offsetHeight));
+
+                    textOverlay.style.left = `${newX}px`;
+                    textOverlay.style.top = `${newY}px`;
+                }
+            }
+
+            function dragEnd() {
+                isDragging = false;
+                document.removeEventListener('mousemove', dragMove);
+                document.removeEventListener('mouseup', dragEnd);
+                saveState(); // Save the new position as a state
+            }
+
+            document.addEventListener('mousemove', dragMove);
+            document.addEventListener('mouseup', dragEnd);
+        }
+
+        // Rotation functionality
+        document.getElementById("rotate-handle").addEventListener("mousedown", function(event) {
+            let startAngle = rotation;
+            let startX = event.clientX;
+            let startY = event.clientY;
+
+            function rotateMove(e) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+                const newRotation = startAngle + angle;
+                textOverlay.style.transform = `translate(-50%, -50%) rotate(${newRotation}deg)`;
+            }
+
+            function rotateEnd() {
+                rotation += Math.atan2(event.clientY - startY, event.clientX - startX) * (180 / Math.PI);
+                document.removeEventListener('mousemove', rotateMove);
+                document.removeEventListener('mouseup', rotateEnd);
+                saveState(); // Save rotation as state
+            }
+
+            document.addEventListener('mousemove', rotateMove);
+            document.addEventListener('mouseup', rotateEnd);
+        });
+
+        textOverlay.addEventListener("mousedown", startDrag);
+    </script>
+</body>
+</html>
